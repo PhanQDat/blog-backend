@@ -73,22 +73,10 @@ jobs:
       ########################################################
       # 6. Clone GitOps Repository
       ########################################################
-      - name: Check Secret
-        env:
-          TOKEN: ${{ secrets.BLOG_K8S_TOKEN }}
-
-        run: |
-
-          echo "Length = ${#TOKEN}"
-
-          if [ -z "$TOKEN" ]; then
-            echo "TOKEN IS EMPTY"
-            exit 1
-          fi
 
       - name: Clone blog-k8s Repository
         run: |
-          git clone https://x-access-token:${{ secrets.DOCKERHUB_USERNAME }}@github.com/PhanQDat/blog-k8s.git
+          git clone https://x-access-token:${{ secrets.BLOG_K8S_TOKEN }}@github.com/PhanQDat/blog-k8s.git
 
       ########################################################
       # 7. Install yq
@@ -159,18 +147,6 @@ jobs:
       ########################################################
       # 12. Push Changes
       ########################################################
-      - name: Debug Git Remote
-        working-directory: blog-k8s
-        run: |
-          echo "===== REMOTE ====="
-          git remote -v
-
-          echo "===== STATUS ====="
-          git status
-
-          echo "===== CONFIG ====="
-          git config --list
-
       - name: Push Changes
         working-directory: blog-k8s
         env:
@@ -179,7 +155,4 @@ jobs:
         run: |
 
           git remote set-url origin https://x-access-token:${TOKEN}@github.com/PhanQDat/blog-k8s.git
-
-          git remote -v
-
           git push origin main
