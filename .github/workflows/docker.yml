@@ -90,24 +90,6 @@ jobs:
           yq --version
 
       ########################################################
-      # 8. Update Kubernetes Manifest
-      ########################################################
-      - name: Update Backend Deployment
-        working-directory: blog-k8s
-
-        run: |
-
-          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
-
-          yq -i '
-            .spec.template.spec.containers[0].image =
-            "phanqdat/blog-backend:'"$SHORT_SHA"'"
-          ' backend/deployment.yaml
-
-          echo "========== deployment.yaml =========="
-          cat backend/deployment.yaml
-
-      ########################################################
       # 9. Configure Git
       ########################################################
       - name: Configure Git
@@ -125,6 +107,24 @@ jobs:
 
         run: |
           git pull --rebase origin main
+
+      ########################################################
+      # 8. Update Kubernetes Manifest
+      ########################################################
+      - name: Update Backend Deployment
+        working-directory: blog-k8s
+
+        run: |
+
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+
+          yq -i '
+            .spec.template.spec.containers[0].image =
+            "phanqdat/blog-backend:'"$SHORT_SHA"'"
+          ' backend/deployment.yaml
+
+          echo "========== deployment.yaml =========="
+          cat backend/deployment.yaml
 
       ########################################################
       # 11. Commit Changes
