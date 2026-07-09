@@ -75,7 +75,7 @@ jobs:
       ########################################################
       - name: Clone blog-k8s Repository
         run: |
-          git clone https://x-access-token:${{ secrets.BLOG_K8S_TOKEN }}@github.com/PhanQDat/blog-k8s.git
+          git clone https://x-access-token:${{ secrets.DOCKERHUB_USERNAME }}@github.com/PhanQDat/blog-k8s.git
 
       ########################################################
       # 7. Install yq
@@ -102,11 +102,11 @@ jobs:
       ########################################################
       # 10. Sync Latest Repository
       ########################################################
-      - name: Pull Latest Changes
-        working-directory: blog-k8s
+      # - name: Pull Latest Changes
+      #   working-directory: blog-k8s
 
-        run: |
-          git pull --rebase origin main
+      #   run: |
+      #     git pull --rebase origin main
 
       ########################################################
       # 8. Update Kubernetes Manifest
