@@ -85,5 +85,6 @@ def create_post():
     return jsonify({'message': 'Tạo bài viết thành công!'}), 201
 
 if __name__ == '__main__':
+    print("CI Test")
     init_db()
     app.run(host='0.0.0.0', port=5000, debug=True)

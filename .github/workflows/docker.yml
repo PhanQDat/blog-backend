@@ -9,7 +9,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     permissions:
@@ -17,32 +16,50 @@ jobs:
 
     steps:
 
+      ########################################################
+      # 1. Checkout Source Code
+      ########################################################
       - name: Checkout Source
         uses: actions/checkout@v4
 
+      ########################################################
+      # 2. Login Docker Hub
+      ########################################################
       - name: Login Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      ########################################################
+      # 3. Setup Docker Buildx
+      ########################################################
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      ########################################################
+      # 4. Generate Docker Tags
+      ########################################################
       - name: Extract Docker Metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: phanqdat/blog-backend
+
           tags: |
             type=raw,value=latest
-            type=sha
+            type=sha,format=short,prefix=
             type=semver,pattern={{version}}
 
+      ########################################################
+      # 5. Build & Push Docker Image
+      ########################################################
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
+
         with:
           context: .
+
           platforms: linux/amd64
 
           push: true
@@ -52,4 +69,85 @@ jobs:
 
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          # test cache
+
+      ########################################################
+      # 6. Clone GitOps Repository
+      ########################################################
+      - name: Clone blog-k8s Repository
+        run: |
+          git clone https://x-access-token:${{ secrets.BLOG_K8S_TOKEN }}@github.com/PhanQDat/blog-k8s.git
+
+      ########################################################
+      # 7. Install yq
+      ########################################################
+      - name: Install yq
+        run: |
+          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 \
+            -O /usr/local/bin/yq
+
+          sudo chmod +x /usr/local/bin/yq
+
+          yq --version
+
+      ########################################################
+      # 8. Update Kubernetes Manifest
+      ########################################################
+      - name: Update Backend Deployment
+        working-directory: blog-k8s
+
+        run: |
+
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+
+          yq -i '
+            .spec.template.spec.containers[0].image =
+            "phanqdat/blog-backend:'"$SHORT_SHA"'"
+          ' backend/deployment.yaml
+
+          echo "========== deployment.yaml =========="
+          cat backend/deployment.yaml
+
+      ########################################################
+      # 9. Configure Git
+      ########################################################
+      - name: Configure Git
+        working-directory: blog-k8s
+
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      ########################################################
+      # 10. Sync Latest Repository
+      ########################################################
+      - name: Pull Latest Changes
+        working-directory: blog-k8s
+
+        run: |
+          git pull --rebase origin main
+
+      ########################################################
+      # 11. Commit Changes
+      ########################################################
+      - name: Commit Changes
+        working-directory: blog-k8s
+
+        run: |
+
+          git add .
+
+          if git diff --cached --quiet
+          then
+            echo "No changes detected."
+          else
+            git commit -m "Update backend image to ${GITHUB_SHA::7}"
+          fi
+
+      ########################################################
+      # 12. Push Changes
+      ########################################################
+      - name: Push Changes
+        working-directory: blog-k8s
+
+        run: |
+          git push origin main
